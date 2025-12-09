@@ -14,7 +14,7 @@
   let solverCancel = false;
 
   // Navigation
-  $$('. nav-link[data-view]').forEach(link => {
+  $$('.nav-link[data-view]').forEach(link => {
     link.addEventListener('click', (e) => {
       e.preventDefault();
       const view = link.dataset.view;
@@ -22,18 +22,18 @@
       $$('.nav-link').forEach(l => l.classList.remove('active'));
       link.classList.add('active');
       
-      $$('.view').forEach(v => v.classList.remove('active'));
+      $$('.view').forEach(v => v.classList. remove('active'));
       $(`#view-${view}`).classList.add('active');
     });
   });
 
   // Tabs in Get view
-  $$('. tab').forEach(tab => {
-    tab.addEventListener('click', () => {
+  $$('.tab').forEach(tab => {
+    tab. addEventListener('click', () => {
       const tabName = tab.dataset.tab;
       
-      $$('.tab').forEach(t => t.classList.remove('active'));
-      tab.classList. add('active');
+      $$('. tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
       
       $$('.tab-content').forEach(tc => tc.classList.remove('active'));
       $(`#tab-${tabName}`).classList.add('active');
@@ -48,7 +48,7 @@
       ... options.headers
     };
     
-    const res = await fetch(url, { ...options, headers });
+    const res = await fetch(url, { ... options, headers });
     const text = await res.text();
     
     let data;
@@ -58,7 +58,7 @@
       data = text;
     }
     
-    if (! res.ok) {
+    if (!res.ok) {
       throw { status: res.status, data };
     }
     
@@ -99,7 +99,7 @@
   function formatDuration(seconds) {
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
-    return `${m}:${s.toString().padStart(2, '0')}`;
+    return `${m}: ${s.toString().padStart(2, '0')}`;
   }
 
   function renderLyrics(data, container) {
@@ -108,8 +108,8 @@
       return;
     }
 
-    const hasSynced = data.syncedLyrics && data.syncedLyrics.trim();
-    const hasPlain = data.plainLyrics && data. plainLyrics.trim();
+    const hasSynced = data.syncedLyrics && data.syncedLyrics. trim();
+    const hasPlain = data.plainLyrics && data.plainLyrics.trim();
 
     let syncedHtml = '';
     if (hasSynced) {
@@ -128,7 +128,7 @@
     container.innerHTML = `
       <div class="lyrics-display">
         <div class="lyrics-header">
-          <h2>${escapeHtml(data.trackName)}</h2>
+          <h2>${escapeHtml(data. trackName)}</h2>
           <p>${escapeHtml(data.artistName)} — ${escapeHtml(data.albumName)}</p>
           <div class="result-meta" style="margin-top: 12px;">
             <span class="result-badge">${formatDuration(data.duration)}</span>
@@ -142,7 +142,7 @@
           <button class="lyrics-tab ${! hasSynced ? 'active' : ''}" data-lyrics="plain">Plain</button>
         </div>
         <div class="lyrics-content">
-          <div id="lyrics-synced" ${!hasSynced ? 'style="display: none"' : ''}>${syncedHtml || '<p class="muted">No synchronized lyrics available</p>'}</div>
+          <div id="lyrics-synced" ${! hasSynced ? 'style="display: none"' : ''}>${syncedHtml || '<p class="muted">No synchronized lyrics available</p>'}</div>
           <div id="lyrics-plain" ${hasSynced ? 'style="display: none"' : ''}>${plainHtml}</div>
         </div>
       </div>
@@ -221,7 +221,7 @@
       const data = await apiFetch(`/search?${qs}`);
       renderSearchResults(data, container);
     } catch (err) {
-      showError(container, err.data?.message || `Search failed (${err.status})`);
+      showError(container, err. data?.message || `Search failed (${err.status})`);
     }
   });
 
@@ -328,7 +328,7 @@
 
   // Solve button
   $('#btn-solve').addEventListener('click', async () => {
-    if (! currentChallenge) {
+    if (!currentChallenge) {
       $('#challenge-status').textContent = 'Please request a challenge first';
       return;
     }
@@ -379,7 +379,7 @@
     const prefix = data.prefix;
     const nonce = data.nonce;
     
-    if (!prefix || !nonce) {
+    if (!prefix || ! nonce) {
       showError($('#publish-results'), 'Please request and solve a challenge first');
       return;
     }
