@@ -7,11 +7,19 @@
   // DOM helpers
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => document.querySelectorAll(sel);
+  const docEl = document.documentElement;
+  const themeLogo = $('#logo-img');
 
   // State
   let currentChallenge = null;
   let solverWorking = false;
   let solverCancel = false;
+  const THEME_STORAGE_KEY = 'lrc-theme-mode';
+  const themeButtons = $$('.theme-btn');
+  const systemDarkQuery = window.matchMedia('(prefers-color-scheme: dark)');
+  let themePreference = getStoredTheme() || 'auto';
+
+  initThemeControls();
 
   // Navigation
   $$('.nav-link[data-view]').forEach(link => {
@@ -79,6 +87,79 @@
       .join('&');
   }
 
+  function getStoredTheme() {
+    try {
+      return localStorage.getItem(THEME_STORAGE_KEY);
+    } catch (err) {
+      console.warn('Unable to access stored theme preference', err);
+      return null;
+    }
+  }
+
+  function setStoredTheme(value) {
+    try {
+      localStorage.setItem(THEME_STORAGE_KEY, value);
+    } catch (err) {
+      console.warn('Unable to persist theme preference', err);
+    }
+  }
+
+  function getEffectiveTheme(pref) {
+    if (pref === 'auto') {
+      return systemDarkQuery.matches ? 'dark' : 'light';
+    }
+    return pref;
+  }
+
+  function updateLogoForTheme(effectiveTheme) {
+    if (!themeLogo) return;
+    const logoForDarkMode = themeLogo.dataset.logoLight || themeLogo.src;
+    const logoForLightMode = themeLogo.dataset.logoDark || themeLogo.src;
+    if (effectiveTheme === 'dark') {
+      themeLogo.src = logoForDarkMode;
+    } else {
+      themeLogo.src = logoForLightMode;
+    }
+  }
+
+  function applyThemePreference(pref) {
+    themePreference = pref;
+    setStoredTheme(pref);
+    const effectiveTheme = getEffectiveTheme(pref);
+    docEl.setAttribute('data-theme', effectiveTheme);
+    updateLogoForTheme(effectiveTheme);
+    themeButtons.forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.themeMode === pref);
+    });
+  }
+
+  function initThemeControls() {
+    if (themeButtons.length) {
+      themeButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const mode = btn.dataset.themeMode || 'auto';
+          applyThemePreference(mode);
+        });
+      });
+    }
+
+    const handleSystemThemeChange = () => {
+      if (themePreference === 'auto') {
+        const effectiveTheme = getEffectiveTheme('auto');
+        docEl.setAttribute('data-theme', effectiveTheme);
+        updateLogoForTheme(effectiveTheme);
+      }
+    };
+
+    if (typeof systemDarkQuery.addEventListener === 'function') {
+      systemDarkQuery.addEventListener('change', handleSystemThemeChange);
+    } else if (typeof systemDarkQuery.addListener === 'function') {
+      systemDarkQuery.addListener(handleSystemThemeChange);
+    }
+
+    applyThemePreference(themePreference);
+  }
+
   // UI helpers
   function showLoading(container) {
     container.innerHTML = `
@@ -119,6 +200,28 @@
     return 'An unknown error occurred';
   }
 
+  async function copyToClipboard(text) {
+    const payload = typeof text === 'string' ? text : String(text ?? '');
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(payload);
+      return;
+    }
+
+    const textarea = document.createElement('textarea');
+    textarea.value = payload;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    textarea.style.pointerEvents = 'none';
+    document.body.appendChild(textarea);
+    textarea.focus({ preventScroll: true });
+    textarea.select();
+    const succeeded = document.execCommand('copy');
+    document.body.removeChild(textarea);
+    if (!succeeded) {
+      throw new Error('Copy command failed');
+    }
+  }
+
   function renderLyrics(data, container) {
     if (!data) {
       showError(container, 'No lyrics found');
@@ -145,13 +248,24 @@
     container.innerHTML = `
       <div class="lyrics-display">
         <div class="lyrics-header">
-          <h2>${escapeHtml(data.trackName)}</h2>
-          <p>${escapeHtml(data.artistName)} — ${escapeHtml(data.albumName)}</p>
-          <div class="result-meta" style="margin-top: 12px;">
-            <span class="result-badge">${formatDuration(data.duration)}</span>
-            ${hasSynced ? '<span class="result-badge synced">Synced</span>' : ''}
-            ${data.instrumental ? '<span class="result-badge instrumental">Instrumental</span>' : ''}
-            <span class="result-badge">ID: ${data.id}</span>
+          <div class="track-summary">
+            <h2>${escapeHtml(data.trackName)}</h2>
+            <p>${escapeHtml(data.artistName)} — ${escapeHtml(data.albumName)}</p>
+            <div class="result-meta" style="margin-top: 12px;">
+              <span class="result-badge">${formatDuration(data.duration)}</span>
+              ${hasSynced ? '<span class="result-badge synced">Synced</span>' : ''}
+              ${data.instrumental ? '<span class="result-badge instrumental">Instrumental</span>' : ''}
+              <span class="result-badge">ID: ${data.id}</span>
+            </div>
+          </div>
+          <div class="lyrics-actions">
+            <button type="button" class="btn-copy" aria-label="Copy currently visible lyrics">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+              <span>Copy lyrics</span>
+            </button>
           </div>
         </div>
         <div class="lyrics-tabs">
@@ -176,6 +290,50 @@
         container.querySelector('#lyrics-plain').style.display = type === 'plain' ? 'block' : 'none';
       });
     });
+
+    const copyButton = container.querySelector('.btn-copy');
+    if (copyButton) {
+      const labelSpan = copyButton.querySelector('span');
+      const defaultLabel = labelSpan ? labelSpan.textContent.trim() || 'Copy lyrics' : 'Copy lyrics';
+      const setLabel = (text) => {
+        if (labelSpan) {
+          labelSpan.textContent = text;
+        } else {
+          copyButton.textContent = text;
+        }
+      };
+
+      let resetTimer;
+      const resetState = () => {
+        copyButton.classList.remove('success');
+        setLabel(defaultLabel);
+      };
+
+      copyButton.addEventListener('click', async () => {
+        clearTimeout(resetTimer);
+        const activeTab = container.querySelector('.lyrics-tab.active');
+        const wantsSynced = activeTab?.dataset.lyrics === 'synced';
+        const textSource = wantsSynced && hasSynced ? data.syncedLyrics : data.plainLyrics;
+
+        if (!textSource || !textSource.trim()) {
+          setLabel('Nothing to copy');
+          resetTimer = setTimeout(resetState, 2000);
+          return;
+        }
+
+        try {
+          await copyToClipboard(textSource);
+          copyButton.classList.add('success');
+          setLabel('Copied!');
+        } catch (err) {
+          console.error('Copy failed:', err);
+          copyButton.classList.remove('success');
+          setLabel('Copy failed');
+        } finally {
+          resetTimer = setTimeout(resetState, 2000);
+        }
+      });
+    }
   }
 
   function renderSearchResults(results, container) {

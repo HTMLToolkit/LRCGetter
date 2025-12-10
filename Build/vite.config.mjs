@@ -17,7 +17,7 @@ export default defineConfig({
         background_color: '#00bfff',
       },
       pwaAssets: {
-        image: 'public/source-image.png',
+        image: 'public/source-image.svg',
         preset: 'minimal-2023',
         includeHtmlHeadLinks: true,
       },
