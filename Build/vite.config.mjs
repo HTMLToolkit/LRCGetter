@@ -3,15 +3,15 @@ import { defineConfig } from "vite";
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
-  base: "./",
   plugins: [
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['robots.txt'],
       manifest: {
-        name: 'LRCLibTest',
-        short_name: 'LRCLibTest',
-        start_url: './',
+        name: 'LRCGetter',
+        short_name: 'LRCGetter',
+        start_url: '/LRCGetter/',
+        scope: "/LRCGetter/",
         display: 'standalone',
         theme_color: '#00bfff',
         background_color: '#00bfff',
