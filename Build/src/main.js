@@ -463,7 +463,7 @@
       status.textContent = `Challenge received! Prefix: ${data.prefix.substring(0, 16)}...Target: ${data.target.substring(0, 16)}...`;
     } catch (err) {
       status.className = 'challenge-status error';
-      status.textContent = 'Failed to get challenge:  ' + getErrorMessage(err);
+      status.textContent = 'Failed to get challenge: ' + getErrorMessage(err);
     }
   });
 
@@ -482,7 +482,7 @@
 
     while (!solverCancel) {
       for (let i = 0; i < batchSize && !solverCancel; i++) {
-        const input = `${prefix}: ${nonce}`;
+        const input = `${prefix}:${nonce}`;
         const hash = await sha256Hex(input);
 
         if (hash < target.toLowerCase()) {
