@@ -460,7 +460,7 @@
       $('#pub-nonce').value = '';
       $('#btn-solve').disabled = false;
       status.className = 'challenge-status success';
-      status.textContent = `Challenge received! Prefix: ${data.prefix.substring(0, 16)}...Target: ${data.target.substring(0, 16)}...`;
+      status.textContent = `Challenge received! Prefix: ${data.prefix.substring(0, 16)}... Target: ${data.target.substring(0, 16)}...`;
     } catch (err) {
       status.className = 'challenge-status error';
       status.textContent = 'Failed to get challenge: ' + getErrorMessage(err);
@@ -474,18 +474,39 @@
     return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
   }
 
+  function hexStringToUint8Array(hex) {
+    if (hex.length % 2 !== 0) throw new Error('Invalid hex string');
+    const arr = new Uint8Array(hex.length / 2);
+    for (let i = 0; i < arr.length; i++) {
+      arr[i] = parseInt(hex.slice(2 * i, 2 * i + 2), 16);
+    }
+    return arr;
+  }
+
+  function compareHex(hash, target) {
+    const a = hexStringToUint8Array(hash);
+    const b = hexStringToUint8Array(target);
+    for (let i = 0; i < a.length; i++) {
+      if (a[i] < b[i]) return true;
+      if (a[i] > b[i]) return false;
+    }
+    return false; // equal, not less
+  }
+
   // Proof of work solver
   async function solvePow(prefix, target, onProgress) {
     let nonce = 0;
     const batchSize = 2048;
     const startTime = Date.now();
 
+    const targetLower = target.toLowerCase();
+
     while (!solverCancel) {
       for (let i = 0; i < batchSize && !solverCancel; i++) {
         const input = `${prefix}:${nonce}`;
         const hash = await sha256Hex(input);
 
-        if (hash < target.toLowerCase()) {
+        if (compareHex(hash, targetLower)) {
           return { nonce: String(nonce), hash, attempts: nonce + 1, time: Date.now() - startTime };
         }
         nonce++;
