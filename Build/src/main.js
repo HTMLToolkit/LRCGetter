@@ -22,28 +22,28 @@
   initThemeControls();
 
   // Navigation
-  $$('.nav-link[data-view]').forEach(link => {
+  $$('.nav-link[data-view]').forEach((link) => {
     link.addEventListener('click', (e) => {
       e.preventDefault();
       const view = link.dataset.view;
 
-      $$('.nav-link').forEach(l => l.classList.remove('active'));
+      $$('.nav-link').forEach((l) => l.classList.remove('active'));
       link.classList.add('active');
 
-      $$('.view').forEach(v => v.classList.remove('active'));
+      $$('.view').forEach((v) => v.classList.remove('active'));
       $(`#view-${view}`).classList.add('active');
     });
   });
 
   // Tabs in Get view
-  $$('.tab').forEach(tab => {
+  $$('.tab').forEach((tab) => {
     tab.addEventListener('click', () => {
       const tabName = tab.dataset.tab;
 
-      $$('.tab').forEach(t => t.classList.remove('active'));
+      $$('.tab').forEach((t) => t.classList.remove('active'));
       tab.classList.add('active');
 
-      $$('.tab-content').forEach(tc => tc.classList.remove('active'));
+      $$('.tab-content').forEach((tc) => tc.classList.remove('active'));
       $(`#tab-${tabName}`).classList.add('active');
     });
   });
@@ -52,8 +52,8 @@
   async function apiFetch(endpoint, options = {}) {
     const url = API_BASE + endpoint;
     const headers = {
-      'Accept': 'application/json',
-      ...options.headers
+      Accept: 'application/json',
+      ...options.headers,
     };
 
     let res;
@@ -61,7 +61,13 @@
       res = await fetch(url, { ...options, headers });
     } catch (networkError) {
       console.error('Network error:', networkError);
-      throw { status: 0, data: { message: 'Network error - check your connection or the API may be down' } };
+      throw {
+        status: 0,
+        data: {
+          message:
+            'Network error - check your connection or the API may be down',
+        },
+      };
     }
 
     const text = await res.text();
@@ -128,14 +134,14 @@
     const effectiveTheme = getEffectiveTheme(pref);
     docEl.setAttribute('data-theme', effectiveTheme);
     updateLogoForTheme(effectiveTheme);
-    themeButtons.forEach(btn => {
+    themeButtons.forEach((btn) => {
       btn.classList.toggle('active', btn.dataset.themeMode === pref);
     });
   }
 
   function initThemeControls() {
     if (themeButtons.length) {
-      themeButtons.forEach(btn => {
+      themeButtons.forEach((btn) => {
         btn.addEventListener('click', () => {
           const mode = btn.dataset.themeMode || 'auto';
           applyThemePreference(mode);
@@ -171,11 +177,15 @@
   }
 
   function showError(container, message) {
-    container.innerHTML = `<div class="message error">${escapeHtml(message)}</div>`;
+    container.innerHTML = `<div class="message error">${escapeHtml(
+      message
+    )}</div>`;
   }
 
   function showSuccess(container, message) {
-    container.innerHTML = `<div class="message success">${escapeHtml(message)}</div>`;
+    container.innerHTML = `<div class="message success">${escapeHtml(
+      message
+    )}</div>`;
   }
 
   function escapeHtml(str) {
@@ -233,28 +243,44 @@
 
     let syncedHtml = '';
     if (hasSynced) {
-      const lines = data.syncedLyrics.split('\n').filter(l => l.trim());
-      syncedHtml = lines.map(line => {
-        const match = line.match(/^\[(\d{2}:\d{2}\.\d{2})\]\s*(.*)$/);
-        if (match) {
-          return `<div class="synced-line"><span class="timestamp">[${match[1]}]</span><span>${escapeHtml(match[2])}</span></div>`;
-        }
-        return `<div>${escapeHtml(line)}</div>`;
-      }).join('');
+      const lines = data.syncedLyrics.split('\n').filter((l) => l.trim());
+      syncedHtml = lines
+        .map((line) => {
+          const match = line.match(/^\[(\d{2}:\d{2}\.\d{2})\]\s*(.*)$/);
+          if (match) {
+            return `<div class="synced-line"><span class="timestamp">[${
+              match[1]
+            }]</span><span>${escapeHtml(match[2])}</span></div>`;
+          }
+          return `<div>${escapeHtml(line)}</div>`;
+        })
+        .join('');
     }
 
-    const plainHtml = hasPlain ? `<pre>${escapeHtml(data.plainLyrics)}</pre>` : '<p class="muted">No plain lyrics available</p>';
+    const plainHtml = hasPlain
+      ? `<pre>${escapeHtml(data.plainLyrics)}</pre>`
+      : '<p class="muted">No plain lyrics available</p>';
 
     container.innerHTML = `
       <div class="lyrics-display">
         <div class="lyrics-header">
           <div class="track-summary">
             <h2>${escapeHtml(data.trackName)}</h2>
-            <p>${escapeHtml(data.artistName)} — ${escapeHtml(data.albumName)}</p>
+            <p>${escapeHtml(data.artistName)} — ${escapeHtml(
+      data.albumName
+    )}</p>
             <div class="result-meta" style="margin-top: 12px;">
               <span class="result-badge">${formatDuration(data.duration)}</span>
-              ${hasSynced ? '<span class="result-badge synced">Synced</span>' : ''}
-              ${data.instrumental ? '<span class="result-badge instrumental">Instrumental</span>' : ''}
+              ${
+                hasSynced
+                  ? '<span class="result-badge synced">Synced</span>'
+                  : ''
+              }
+              ${
+                data.instrumental
+                  ? '<span class="result-badge instrumental">Instrumental</span>'
+                  : ''
+              }
               <span class="result-badge">ID: ${data.id}</span>
             </div>
           </div>
@@ -269,32 +295,50 @@
           </div>
         </div>
         <div class="lyrics-tabs">
-          <button class="lyrics-tab ${hasSynced ? 'active' : ''}" data-lyrics="synced" ${!hasSynced ? 'disabled' : ''}>Synchronized</button>
-          <button class="lyrics-tab ${!hasSynced ? 'active' : ''}" data-lyrics="plain">Plain</button>
+          <button class="lyrics-tab ${
+            hasSynced ? 'active' : ''
+          }" data-lyrics="synced" ${
+      !hasSynced ? 'disabled' : ''
+    }>Synchronized</button>
+          <button class="lyrics-tab ${
+            !hasSynced ? 'active' : ''
+          }" data-lyrics="plain">Plain</button>
         </div>
         <div class="lyrics-content">
-          <div id="lyrics-synced" ${!hasSynced ? 'style="display: none"' : ''}>${syncedHtml || '<p class="muted">No synchronized lyrics available</p>'}</div>
-          <div id="lyrics-plain" ${hasSynced ? 'style="display: none"' : ''}>${plainHtml}</div>
+          <div id="lyrics-synced" ${
+            !hasSynced ? 'style="display: none"' : ''
+          }>${
+      syncedHtml || '<p class="muted">No synchronized lyrics available</p>'
+    }</div>
+          <div id="lyrics-plain" ${
+            hasSynced ? 'style="display: none"' : ''
+          }>${plainHtml}</div>
         </div>
       </div>
     `;
 
-    container.querySelectorAll('.lyrics-tab').forEach(tab => {
+    container.querySelectorAll('.lyrics-tab').forEach((tab) => {
       tab.addEventListener('click', () => {
         if (tab.disabled) return;
-        container.querySelectorAll('.lyrics-tab').forEach(t => t.classList.remove('active'));
+        container
+          .querySelectorAll('.lyrics-tab')
+          .forEach((t) => t.classList.remove('active'));
         tab.classList.add('active');
 
         const type = tab.dataset.lyrics;
-        container.querySelector('#lyrics-synced').style.display = type === 'synced' ? 'block' : 'none';
-        container.querySelector('#lyrics-plain').style.display = type === 'plain' ? 'block' : 'none';
+        container.querySelector('#lyrics-synced').style.display =
+          type === 'synced' ? 'block' : 'none';
+        container.querySelector('#lyrics-plain').style.display =
+          type === 'plain' ? 'block' : 'none';
       });
     });
 
     const copyButton = container.querySelector('.btn-copy');
     if (copyButton) {
       const labelSpan = copyButton.querySelector('span');
-      const defaultLabel = labelSpan ? labelSpan.textContent.trim() || 'Copy lyrics' : 'Copy lyrics';
+      const defaultLabel = labelSpan
+        ? labelSpan.textContent.trim() || 'Copy lyrics'
+        : 'Copy lyrics';
       const setLabel = (text) => {
         if (labelSpan) {
           labelSpan.textContent = text;
@@ -313,7 +357,8 @@
         clearTimeout(resetTimer);
         const activeTab = container.querySelector('.lyrics-tab.active');
         const wantsSynced = activeTab?.dataset.lyrics === 'synced';
-        const textSource = wantsSynced && hasSynced ? data.syncedLyrics : data.plainLyrics;
+        const textSource =
+          wantsSynced && hasSynced ? data.syncedLyrics : data.plainLyrics;
 
         if (!textSource || !textSource.trim()) {
           setLabel('Nothing to copy');
@@ -338,13 +383,15 @@
 
   function renderSearchResults(results, container) {
     if (!results || results.length === 0) {
-      container.innerHTML = '<div class="message info">No results found. Try different search terms.</div>';
+      container.innerHTML =
+        '<div class="message info">No results found. Try different search terms.</div>';
       return;
     }
 
-    container.innerHTML = results.map(item => {
-      const hasSynced = item.syncedLyrics && item.syncedLyrics.trim();
-      return `
+    container.innerHTML = results
+      .map((item) => {
+        const hasSynced = item.syncedLyrics && item.syncedLyrics.trim();
+        return `
         <div class="result-card" data-id="${item.id}">
           <div class="result-header">
             <div>
@@ -353,16 +400,25 @@
             </div>
             <div class="result-meta">
               <span class="result-badge">${formatDuration(item.duration)}</span>
-              ${hasSynced ? '<span class="result-badge synced">Synced</span>' : ''}
-              ${item.instrumental ? '<span class="result-badge instrumental">Instrumental</span>' : ''}
+              ${
+                hasSynced
+                  ? '<span class="result-badge synced">Synced</span>'
+                  : ''
+              }
+              ${
+                item.instrumental
+                  ? '<span class="result-badge instrumental">Instrumental</span>'
+                  : ''
+              }
             </div>
           </div>
           <div class="result-album">${escapeHtml(item.albumName)}</div>
         </div>
       `;
-    }).join('');
+      })
+      .join('');
 
-    container.querySelectorAll('.result-card').forEach(card => {
+    container.querySelectorAll('.result-card').forEach((card) => {
       card.addEventListener('click', async () => {
         const id = card.dataset.id;
         showLoading(container);
@@ -384,7 +440,10 @@
     const params = Object.fromEntries(formData.entries());
 
     if (!params.q && !params.track_name) {
-      showError($('#search-results'), 'Please provide at least a search query or track name');
+      showError(
+        $('#search-results'),
+        'Please provide at least a search query or track name'
+      );
       return;
     }
 
@@ -420,7 +479,10 @@
       renderLyrics(data, container);
     } catch (err) {
       if (err.status === 404) {
-        showError(container, 'Track not found. Make sure all fields match exactly, including duration (±2 seconds).');
+        showError(
+          container,
+          'Track not found. Make sure all fields match exactly, including duration (±2 seconds).'
+        );
       } else {
         showError(container, getErrorMessage(err));
       }
@@ -460,7 +522,10 @@
       $('#pub-nonce').value = '';
       $('#btn-solve').disabled = false;
       status.className = 'challenge-status success';
-      status.textContent = `Challenge received! Prefix: ${data.prefix.substring(0, 16)}... Target: ${data.target.substring(0, 16)}...`;
+      status.textContent = `Challenge received! Prefix: ${data.prefix.substring(
+        0,
+        16
+      )}... Target: ${data.target.substring(0, 16)}...`;
     } catch (err) {
       status.className = 'challenge-status error';
       status.textContent = 'Failed to get challenge: ' + getErrorMessage(err);
@@ -471,7 +536,9 @@
   async function sha256Hex(str) {
     const data = new TextEncoder().encode(str);
     const hash = await crypto.subtle.digest('SHA-256', data);
-    return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+    return Array.from(new Uint8Array(hash))
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('');
   }
 
   function hexStringToUint8Array(hex) {
@@ -493,34 +560,78 @@
     return false; // equal, not less
   }
 
-  // Proof of work solver
+  // Multi-worker proof of work solver
   async function solvePow(prefix, target, onProgress) {
-    let nonce = 0;
+    const numWorkers = navigator.hardwareConcurrency || 4;
     const batchSize = 2048;
+    let solved = false;
+    let result = null;
+    let cancelled = false;
     const startTime = Date.now();
+    const workers = [];
+    let lastAttempts = 0;
 
-    const targetLower = target.toLowerCase();
-
-    while (!solverCancel) {
-      for (let i = 0; i < batchSize && !solverCancel; i++) {
-        const input = `${prefix}:${nonce}`;
-        const hash = await sha256Hex(input);
-
-        if (compareHex(hash, targetLower)) {
-          return { nonce: String(nonce), hash, attempts: nonce + 1, time: Date.now() - startTime };
-        }
-        nonce++;
-      }
-
-      if (onProgress) {
-        onProgress(nonce, Date.now() - startTime);
-      }
-
-      // Yield to UI
-      await new Promise(r => setTimeout(r, 0));
+    function terminateAll() {
+      workers.forEach((w) => w.terminate());
     }
 
-    throw new Error('Cancelled');
+    // Worker message handler
+    function handleWorkerMessage(e) {
+      if (cancelled) return;
+      if (e.data.found) {
+        solved = true;
+        result = {
+          nonce: String(e.data.nonce),
+          hash: e.data.hash,
+          attempts: e.data.attempts,
+          time: Date.now() - startTime,
+        };
+        terminateAll();
+      } else if (e.data.progress && onProgress) {
+        lastAttempts += batchSize;
+        onProgress(lastAttempts, Date.now() - startTime);
+      } else if (e.data.cancelled) {
+        terminateAll();
+      }
+    }
+
+    // Start workers
+    for (let i = 0; i < numWorkers; i++) {
+      const worker = new Worker('./src/pow-worker.js', { type: 'module' });
+      workers.push(worker);
+      worker.onmessage = handleWorkerMessage;
+      worker.postMessage({
+        prefix,
+        target,
+        start: i,
+        stride: numWorkers,
+        batchSize,
+      });
+    }
+
+    // Solver cancel logic
+    function cancelSolver() {
+      cancelled = true;
+      workers.forEach((w) => w.postMessage({ cancel: true }));
+      terminateAll();
+    }
+
+    // Bind to global cancel
+    solverCancel = false;
+    const cancelInterval = setInterval(() => {
+      if (solverCancel && !cancelled) {
+        cancelSolver();
+      }
+    }, 50);
+
+    // Wait for result
+    while (!solved && !cancelled) {
+      await new Promise((r) => setTimeout(r, 50));
+    }
+    clearInterval(cancelInterval);
+
+    if (result) return result;
+    throw new Error('Cancelled or not found');
   }
 
   // Solve button
@@ -550,10 +661,17 @@
 
       $('#pub-nonce').value = result.nonce;
       status.className = 'challenge-status success';
-      status.textContent = `Solved! Nonce: ${result.nonce} (${result.attempts.toLocaleString()} attempts in ${(result.time / 1000).toFixed(1)}s)`;
+      status.textContent = `Solved! Nonce: ${
+        result.nonce
+      } (${result.attempts.toLocaleString()} attempts in ${(
+        result.time / 1000
+      ).toFixed(1)}s)`;
     } catch (err) {
       status.className = 'challenge-status error';
-      status.textContent = err.message === 'Cancelled' ? 'Solver cancelled' : `Solver error: ${err.message}`;
+      status.textContent =
+        err.message === 'Cancelled'
+          ? 'Solver cancelled'
+          : `Solver error: ${err.message}`;
     } finally {
       solverWorking = false;
       $('#btn-solve').disabled = false;
@@ -577,7 +695,10 @@
     const nonce = data.nonce;
 
     if (!prefix || !nonce) {
-      showError($('#publish-results'), 'Please request and solve a challenge first');
+      showError(
+        $('#publish-results'),
+        'Please request and solve a challenge first'
+      );
       return;
     }
 
@@ -588,7 +709,7 @@
       albumName: data.albumName,
       duration: parseInt(data.duration, 10),
       plainLyrics: data.plainLyrics || '',
-      syncedLyrics: data.syncedLyrics || ''
+      syncedLyrics: data.syncedLyrics || '',
     };
 
     const container = $('#publish-results');
@@ -599,9 +720,9 @@
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Publish-Token': token
+          'X-Publish-Token': token,
         },
-        body: JSON.stringify(body)
+        body: JSON.stringify(body),
       });
 
       showSuccess(container, 'Lyrics published successfully!');
