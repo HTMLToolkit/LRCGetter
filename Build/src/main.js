@@ -597,7 +597,7 @@
 
     // Start workers
     for (let i = 0; i < numWorkers; i++) {
-      const worker = new Worker('./src/pow-worker.js', { type: 'module' });
+      const worker = new Worker(new URL('pow-worker.js', import.meta.url), { type: 'module' });
       workers.push(worker);
       worker.onmessage = handleWorkerMessage;
       worker.postMessage({
