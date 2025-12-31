@@ -1,5 +1,5 @@
 {
-  "name": "lrclibtest",
+  "name": "lrcgetter",
   "version": "0.1.0",
   "description": "My typical web dev starter project.",
   "main": "index.js",
@@ -11,14 +11,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/HTMLToolkit/LRCLibTest.git"
+    "url": "git+https://github.com/HTMLToolkit/LRCGetter.git"
   },
   "author": "NellowTCS",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/HTMLToolkit/LRCLibTest/issues"
+    "url": "https://github.com/HTMLToolkit/LRCGetter/issues"
   },
-  "homepage": "https://github.com/HTMLToolkit/LRCLibTest#readme",
+  "homepage": "https://github.com/HTMLToolkit/LRCGetter#readme",
   "dependencies": {
     "js-sha256": "^0.11.1",
     "vite": "^7.1.3"
