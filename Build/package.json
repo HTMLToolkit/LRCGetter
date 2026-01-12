@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:single": "cross-env SINGLE_FILE=true npm run build",
     "preview": "vite preview",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -25,7 +26,8 @@
   },
   "devDependencies": {
     "@vite-pwa/assets-generator": "^1.0.1",
-    "sharp": "^0.34.4",
-    "vite-plugin-pwa": "^1.0.3"
+    "cross-env": "^10.1.0",
+    "vite-plugin-pwa": "^1.0.3",
+    "vite-plugin-singlefile": "^2.3.0"
   }
 }

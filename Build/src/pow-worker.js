@@ -19,14 +19,6 @@ function compareHex(hash, target) {
   return false;
 }
 
-async function sha256Hex(str) {
-  const data = new TextEncoder().encode(str);
-  const hash = await crypto.subtle.digest('SHA-256', data);
-  return Array.from(new Uint8Array(hash))
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('');
-}
-
 // Allow for cancel
 let stopped = false;
 
