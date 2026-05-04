@@ -559,6 +559,134 @@ function compareHex(hash, target) {
   return false; // equal, not less
 }
 
+function normalizeLyricsText(value) {
+  if (typeof value !== 'string') {
+    return '';
+  }
+
+  return value.replace(/\r\n/g, '\n').trimEnd();
+}
+
+function parseLrcTimestamp(token) {
+  const match = token.match(/^(\d{2}):(\d{2})[.:](\d{2,3})$/);
+  if (!match) {
+    return null;
+  }
+
+  const minutes = Number.parseInt(match[1], 10);
+  const seconds = Number.parseInt(match[2], 10);
+  const fractionRaw = match[3];
+  const fractionMs =
+    fractionRaw.length === 2
+      ? Number.parseInt(fractionRaw, 10) * 10
+      : Number.parseInt(fractionRaw, 10);
+
+  return (minutes * 60 + seconds) * 1000 + fractionMs;
+}
+
+function parseLrcLines(syncedLyrics) {
+  const normalized = normalizeLyricsText(syncedLyrics);
+  if (!normalized) {
+    return [];
+  }
+
+  const parsed = normalized
+    .split('\n')
+    .map((line) => {
+      const match = line.match(/^\[([^\]]+)\](.*)$/);
+      if (!match) {
+        return null;
+      }
+
+      const startMs = parseLrcTimestamp(match[1]);
+      if (startMs === null) {
+        return null;
+      }
+
+      return {
+        text: (match[2] || '').trim(),
+        start_ms: startMs,
+      };
+    })
+    .filter((line) => line);
+
+  return parsed.map((line, index) => ({
+    ...line,
+    end_ms: parsed[index + 1]?.start_ms,
+  }));
+}
+
+function stripTimestamp(syncedLyrics) {
+  const normalized = normalizeLyricsText(syncedLyrics);
+  if (!normalized) {
+    return '';
+  }
+
+  return normalized.replace(/^\[[^\]]+\] */gm, '');
+}
+
+function isInstrumentalLyrics(syncedLyrics) {
+  const lowered = normalizeLyricsText(syncedLyrics).toLowerCase();
+  return lowered.includes('[au:') && lowered.includes('instrumental');
+}
+
+function yamlQuote(value) {
+  return `'${String(value).replace(/'/g, "''")}'`;
+}
+
+function indentBlock(text, spaces = 2) {
+  const indent = ' '.repeat(spaces);
+  return text
+    .split('\n')
+    .map((line) => `${indent}${line}`)
+    .join('\n');
+}
+
+function buildLyricsfile({ trackName, artistName, albumName, duration, plainLyrics, syncedLyrics }) {
+  const normalizedPlain = normalizeLyricsText(plainLyrics);
+  const normalizedSynced = normalizeLyricsText(syncedLyrics);
+  const isInstrumental = isInstrumentalLyrics(normalizedSynced);
+  const parsedLines = isInstrumental ? [] : parseLrcLines(normalizedSynced);
+  const plain = isInstrumental
+    ? ''
+    : normalizedPlain || stripTimestamp(normalizedSynced);
+
+  const lines = [
+    `version: ${yamlQuote('1.0')}`,
+    'metadata:',
+    `  title: ${yamlQuote(trackName)}`,
+    `  artist: ${yamlQuote(artistName)}`,
+  ];
+
+  if (normalizeLyricsText(albumName).trim()) {
+    lines.push(`  album: ${yamlQuote(albumName)}`);
+  }
+
+  if (Number.isFinite(duration) && duration > 0) {
+    lines.push(`  duration_ms: ${Math.round(duration * 1000)}`);
+  }
+
+  lines.push(`  instrumental: ${isInstrumental ? 'true' : 'false'}`);
+
+  if (parsedLines.length > 0) {
+    lines.push('lines:');
+    parsedLines.forEach((line) => {
+      lines.push(`  - text: ${yamlQuote(line.text)}`);
+      lines.push(`    start_ms: ${line.start_ms}`);
+      if (line.end_ms !== undefined) {
+        lines.push(`    end_ms: ${line.end_ms}`);
+      }
+    });
+  }
+
+  if (plain) {
+    lines.push('plain: |');
+    lines.push(indentBlock(plain));
+  }
+
+  return `${lines.join('\n')}\n`;
+}
+
 // Multi-worker proof of work solver
 async function solvePow(prefix, target, onProgress) {
   const numWorkers = navigator.hardwareConcurrency || 4;
@@ -702,13 +830,26 @@ $('#form-publish').addEventListener('submit', async (e) => {
   }
 
   const token = `${prefix}:${nonce}`;
+  const duration = Number.parseFloat(data.duration);
+  if (!Number.isFinite(duration) || duration <= 0) {
+    showError($('#publish-results'), 'Please enter a valid duration before publishing');
+    return;
+  }
   const body = {
     trackName: data.trackName,
     artistName: data.artistName,
     albumName: data.albumName,
-    duration: parseInt(data.duration, 10),
+    duration,
     plainLyrics: data.plainLyrics || '',
     syncedLyrics: data.syncedLyrics || '',
+    lyricsfile: buildLyricsfile({
+      trackName: data.trackName,
+      artistName: data.artistName,
+      albumName: data.albumName,
+      duration,
+      plainLyrics: data.plainLyrics || '',
+      syncedLyrics: data.syncedLyrics || '',
+    }),
   };
 
   const container = $('#publish-results');

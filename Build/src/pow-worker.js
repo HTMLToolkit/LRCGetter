@@ -34,7 +34,7 @@ onmessage = async function (e) {
 
   while (!stopped) {
     for (let b = 0; b < batchSize; b++) {
-      const input = `${prefix}:${nonce}`;
+      const input = `${prefix}${nonce}`;
       const hash = sha256(input);
       if (compareHex(hash, targetLower)) {
         postMessage({ found: true, nonce, hash, attempts: nonce + 1 });
