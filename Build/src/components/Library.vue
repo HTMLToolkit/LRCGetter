@@ -128,7 +128,7 @@ const { open: openExportViewer, close: closeExportViewer } = useModal({
   },
 })
 
-const { addToQueue: addToExportQueue, setFileHandleMap } = useExporter()
+const { addToQueue: addToExportQueue, setFileHandleMap, restoreFileHandleMap } = useExporter()
 const { setFileHandleMap: setPlayerFileHandleMap } = usePlayer()
 
 const changeActiveTab = tab => {
@@ -162,7 +162,7 @@ const scanFilesRecursive = async (dirHandle, path = '') => {
   for await (const entry of dirHandle.values()) {
     if (entry.name.startsWith('._')) continue
     if (entry.kind === 'file' && AUDIO_EXTENSIONS.test(entry.name)) {
-      results.push({ name: entry.name, handle: entry, path: path ? `${path}/${entry.name}` : entry.name })
+      results.push({ name: entry.name, handle: entry, parentHandle: dirHandle, path: path ? `${path}/${entry.name}` : entry.name })
     } else if (entry.kind === 'directory') {
       const subResults = await scanFilesRecursive(entry, path ? `${path}/${entry.name}` : entry.name)
       results.push(...subResults)
@@ -305,6 +305,7 @@ const scanLibrary = async (isRefresh = false) => {
 
     // Pre-load existing tracks once to avoid repeated getAllTracks calls
     const existingTracks = await libraryStore.getAllTracks()
+    restoreFileHandleMap(existingTracks)
     let nextId = Date.now()
 
     for (const handle of dirHandles) {
@@ -377,6 +378,7 @@ const scanLibrary = async (isRefresh = false) => {
             lyricsfile: existing?.lyricsfile || null,
             lyricsfile_id: existing?.lyricsfile_id || null,
             file_handle: fileEntry.handle,
+            parent_handle: fileEntry.parentHandle,
           }
 
           if (existing) {
@@ -385,7 +387,7 @@ const scanLibrary = async (isRefresh = false) => {
             await libraryStore.addTrack(trackData)
           }
 
-          fileHandleMap[trackData.id] = fileEntry.handle
+          fileHandleMap[trackData.id] = { fileHandle: fileEntry.handle, parentHandle: fileEntry.parentHandle }
         } catch (error) {
           console.warn(`Failed to process ${fileEntry.name}:`, error)
         }
@@ -421,6 +423,12 @@ const fullScanLibrary = async () => {
 
 onMounted(async () => {
   const init = localStorage.getItem(LIBRARY_INIT_KEY) === 'true'
+  if (init) {
+    // Restore file handles from stored tracks so export/playback work immediately
+    const store = useLibraryStore()
+    const existing = await store.getAllTracks()
+    restoreFileHandleMap(existing)
+  }
   if (!init || props.shouldScan) {
     // First time initialization or directories changed - run a full scan
     await scanLibrary(false)

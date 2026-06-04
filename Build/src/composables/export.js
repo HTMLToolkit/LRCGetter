@@ -1,6 +1,7 @@
 import { computed, markRaw, ref } from 'vue'
 import { useLibraryStore } from './useLibraryStore.js'
 import { parseLyricsfile } from '@/utils/lyricsfile.js'
+import { embedLyricsInFile } from '@/utils/embed-lyrics.js'
 
 const delay = time => new Promise(resolve => setTimeout(resolve, time))
 
@@ -21,6 +22,22 @@ let fileHandleMap = null
 
 const setFileHandleMap = (map) => {
   fileHandleMap = map
+}
+
+const restoreFileHandleMap = (tracks) => {
+  const map = {}
+  for (const track of tracks) {
+    if (track.file_handle) {
+      map[track.id] = {
+        fileHandle: track.file_handle,
+        parentHandle: track.parent_handle,
+      }
+    }
+  }
+  if (Object.keys(map).length > 0) {
+    fileHandleMap = map
+    console.log(`Restored ${Object.keys(map).length} file handles from stored tracks`)
+  }
 }
 
 const addLog = logObj => {
@@ -64,9 +81,9 @@ const exportTrack = async track => {
       return
     }
 
-    // Try to get file handle for the track's directory
-    const handle = fileHandleMap?.[track.id]
-    if (!handle) {
+    // Get file handle data
+    const entry = fileHandleMap?.[track.id]
+    if (!entry) {
       skippedCount.value++
       addLog({
         status: 'skipped',
@@ -77,20 +94,54 @@ const exportTrack = async track => {
       return
     }
 
-    const parentDir = await handle.parent?.()
-    if (!parentDir) {
-      skippedCount.value++
-      addLog({
-        status: 'skipped',
-        title: track.title,
-        artistName: track.artist_name,
-        message: 'Could not determine parent directory',
-      })
-      return
-    }
+    // New format: { fileHandle, parentHandle }; Old format: raw FileSystemFileHandle
+    const fileHandle = entry.fileHandle || entry
+    const parentDir = entry.parentHandle || await fileHandle.parent?.()
 
     for (const format of formats) {
-      if (format === 'embedded') continue // Skip embedding for now
+      if (format === 'embedded') {
+        if (!parsed.plainLyrics && (!parsed.syncedLines || parsed.syncedLines.length === 0)) {
+          skippedCount.value++
+          addLog({
+            status: 'skipped',
+            title: track.title,
+            artistName: track.artist_name,
+            message: 'No lyrics to embed',
+          })
+          continue
+        }
+
+        const result = await embedLyricsInFile(fileHandle, parsed.plainLyrics, parsed.syncedLines)
+        if (result.success) {
+          addLog({
+            status: 'success',
+            title: track.title,
+            artistName: track.artist_name,
+            message: result.message,
+          })
+          exportedCount.value++
+        } else {
+          skippedCount.value++
+          addLog({
+            status: 'skipped',
+            title: track.title,
+            artistName: track.artist_name,
+            message: result.message,
+          })
+        }
+        continue
+      }
+
+      if (!parentDir) {
+        skippedCount.value++
+        addLog({
+          status: 'skipped',
+          title: track.title,
+          artistName: track.artist_name,
+          message: 'Could not determine parent directory',
+        })
+        return
+      }
 
       const fileName = `${track.title}.${format}`
       let content = ''
@@ -113,8 +164,8 @@ const exportTrack = async track => {
         continue
       }
 
-      const fileHandle = await parentDir.getFileHandle(fileName, { create: true })
-      const writable = await fileHandle.createWritable()
+      const newFileHandle = await parentDir.getFileHandle(fileName, { create: true })
+      const writable = await newFileHandle.createWritable()
       await writable.write(content)
       await writable.close()
 
@@ -210,5 +261,6 @@ export function useExporter() {
     stopExporting,
     exportNext,
     setFileHandleMap,
+    restoreFileHandleMap,
   }
 }

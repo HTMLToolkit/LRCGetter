@@ -59,7 +59,8 @@ export function usePlayer() {
     playingTrack.value = track
 
     try {
-      const handle = track.file_handle || fileHandleMap[track.id]
+      const mapEntry = fileHandleMap[track.id]
+      const handle = track.file_handle || (mapEntry?.fileHandle || mapEntry)
       if (handle) {
         const file = await handle.getFile()
         objectUrl = URL.createObjectURL(file)
