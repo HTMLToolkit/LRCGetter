@@ -1,0 +1,132 @@
+<template>
+  <div
+    ref="parentRef"
+    class="absolute top-0 left-0 w-full h-full bg-white p-4 shadow-lg overflow-y-auto dark:bg-neutral-950"
+  >
+    <div :style="{ height: `${totalSize}px`, width: '100%', position: 'relative' }">
+      <div class="mb-4">
+        <button class="button button-normal transition rounded-full p-4" @click="$emit('back')">
+          <ArrowLeft />
+        </button>
+      </div>
+
+      <div class="flex justify-between">
+        <div class="flex flex-col mb-8">
+          <div class="text-thin text-xl text-neutral-900 dark:text-white">
+            {{ artist.name }}
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="text-sm text-neutral-800 group-hover:text-neutral-800 transition dark:text-white">
+              {{ artist.tracks_count }} tracks
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <button
+            class="button button-normal px-4 py-1.5 text-xs rounded-full"
+            @click.prevent="downloadArtistLyrics"
+          >
+            <div class="text-sm">
+              <DownloadMultiple />
+            </div>
+            <span> Download artist lyrics </span>
+          </button>
+        </div>
+      </div>
+
+      <div class="w-full">
+        <div class="w-full flex">
+          <div class="text-xs text-neutral-800/70 font-bold flex w-full dark:text-neutral-500">
+            <div class="text-right flex-none w-[5%] p-1 pr-2">#</div>
+            <div class="text-left flex-none w-[60%] p-1">Track</div>
+            <!-- Adjusted width percentage -->
+            <div class="text-right flex-none w-[10%] p-1">Duration</div>
+            <div class="text-center flex-none w-[10%] p-1">Lyrics</div>
+            <div class="text-right flex-none w-[15%] p-1" />
+          </div>
+        </div>
+        <div class="w-full flex flex-col">
+          <div
+            v-for="virtualRow in virtualRows"
+            :key="virtualRow.index"
+            class="group flex flex-col w-full"
+            :style="{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: `${virtualRow.size}px`,
+              transform: `translateY(${virtualRow.start}px)`,
+            }"
+          >
+            <TrackItem
+              :track-id="virtualRow.key"
+              :is-show-track-number="true"
+              @play-track="playTrack"
+              @download-lyrics="downloadLyrics"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import ArrowLeft from '~icons/mdi/arrow-left'
+import DownloadMultiple from '~icons/mdi/download-multiple'
+import { useVirtualizer } from '@tanstack/vue-virtual'
+import { ref, computed, watch, onMounted } from 'vue'
+import TrackItem from '../track-list/TrackItem.vue'
+import { useLibraryStore } from '@/composables/useLibraryStore.js'
+import { useDownloader } from '@/composables/downloader.js'
+
+const props = defineProps(['artist'])
+const emit = defineEmits(['back', 'playTrack', 'downloadLyrics'])
+
+const { addToQueue } = useDownloader()
+
+const trackIds = ref([])
+const parentRef = ref(null)
+
+const rowVirtualizer = useVirtualizer(
+  computed(() => ({
+    count: trackIds.value.length,
+    getScrollElement: () => parentRef.value,
+    estimateSize: () => 52,
+    overscan: 5,
+    paddingStart: 175,
+    getItemKey: index => trackIds.value[index],
+  }))
+)
+
+const virtualRows = computed(() => rowVirtualizer.value.getVirtualItems())
+
+const totalSize = computed(() => rowVirtualizer.value.getTotalSize())
+
+const playTrack = track => {
+  emit('playTrack', track)
+}
+
+const downloadLyrics = track => {
+  emit('downloadLyrics', track)
+}
+
+const downloadArtistLyrics = async () => {
+  const CONFIG_STORAGE_KEY = 'lrcget-config'
+  const config = JSON.parse(localStorage.getItem(CONFIG_STORAGE_KEY) || '{}')
+  const store = useLibraryStore()
+  const downloadTrackIds = await store.getArtistTrackIds({
+    artistId: props.artist.id,
+    withoutPlainLyrics: config.skip_tracks_with_plain_lyrics,
+    withoutSyncedLyrics: config.skip_tracks_with_synced_lyrics,
+  })
+  addToQueue(downloadTrackIds)
+}
+
+onMounted(async () => {
+  const store = useLibraryStore()
+  trackIds.value = await store.getArtistTrackIds({ artistId: props.artist.id })
+})
+</script>

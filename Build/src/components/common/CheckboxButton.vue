@@ -1,0 +1,49 @@
+<template>
+  <div class="inline-flex items-center">
+    <input
+      :id="id"
+      type="checkbox"
+      :name="name"
+      :checked="modelValue"
+      class="hidden"
+      :disabled="disabled"
+      @change="$emit('update:modelValue', !modelValue)"
+    />
+    <label
+      :for="id"
+      class="inline-flex items-center cursor-pointer select-none"
+      :class="disabled ? 'opacity-50 cursor-not-allowed' : ''"
+    >
+      <CheckboxMarked v-if="modelValue" class="w-6 h-6 text-neutral-800 dark:text-neutral-400" />
+      <CheckboxBlankOutline v-else class="w-6 h-6 text-neutral-800 dark:text-neutral-400" />
+      <span class="ml-1 child-label">
+        <slot />
+      </span>
+    </label>
+  </div>
+</template>
+
+<script setup>
+import CheckboxMarked from '~icons/mdi/checkbox-marked'
+import CheckboxBlankOutline from '~icons/mdi/checkbox-blank-outline'
+defineProps({
+  modelValue: {
+    type: Boolean,
+    required: true,
+  },
+  name: {
+    type: String,
+    required: true,
+  },
+  id: {
+    type: String,
+    required: true,
+  },
+  disabled: {
+    type: Boolean,
+    default: false,
+  },
+})
+
+defineEmits(['update:modelValue'])
+</script>
